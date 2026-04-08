@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "434047027640",
+    "project_id": "scorearena-app",
+    "storage_bucket": "scorearena-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:434047027640:android:a90d531be4a8cd9303674d",
+        "android_client_info": {
+          "package_name": "com.example.scorearena_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOxVx3hF6Sh7bxi2GHhy7YFFF1UUZ6omE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
