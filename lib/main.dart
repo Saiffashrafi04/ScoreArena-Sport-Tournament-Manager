@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'screens/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,19 +15,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        appBar: AppBar(title: const Text("Firebase Test 🚀")),
-        body: Center(
-          child: ElevatedButton(
-            onPressed: () async {
-              await FirebaseFirestore.instance.collection('test').add({
-                'message': 'Hello from app',
-              });
-            },
-            child: const Text("Send Data to Firebase"),
-          ),
-        ),
-      ),
+      home: const LoginScreen(),
     );
   }
 }
