@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/match_model.dart';
 import '../models/team_model.dart';
 import '../models/tournament_model.dart';
+import 'live_score_screen.dart';
 
 class ManageMatchesScreen extends StatefulWidget {
   final Tournament tournament;
@@ -536,7 +537,17 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                                     return;
                                   }
 
-                                  if (value == 'upcoming' ||
+                                  if (value == 'live-score') {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => LiveScoreScreen(
+                                          tournament: widget.tournament,
+                                          match: match,
+                                        ),
+                                      ),
+                                    );
+                                  } else if (value == 'upcoming' ||
                                       value == 'live' ||
                                       value == 'completed') {
                                     _updateStatus(match.id!, value);
@@ -545,6 +556,10 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                                   }
                                 },
                                 itemBuilder: (context) => const [
+                                    PopupMenuItem<String>(
+                                      value: 'live-score',
+                                      child: Text('Live Score Entry'),
+                                    ),
                                   PopupMenuItem<String>(
                                     value: 'upcoming',
                                     child: Text('Set Upcoming'),

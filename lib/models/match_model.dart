@@ -9,6 +9,9 @@ class MatchModel {
   final String teamBName;
   final String venue;
   final String status;
+  final int teamAScore;
+  final int teamBScore;
+  final DateTime? lastUpdatedAt;
   final DateTime scheduledAt;
   final DateTime createdAt;
 
@@ -21,6 +24,9 @@ class MatchModel {
     required this.teamBName,
     required this.venue,
     required this.status,
+    this.teamAScore = 0,
+    this.teamBScore = 0,
+    this.lastUpdatedAt,
     required this.scheduledAt,
     required this.createdAt,
   });
@@ -34,6 +40,9 @@ class MatchModel {
       'teamBName': teamBName,
       'venue': venue,
       'status': status,
+      'teamAScore': teamAScore,
+      'teamBScore': teamBScore,
+      'lastUpdatedAt': lastUpdatedAt,
       'scheduledAt': scheduledAt,
       'createdAt': createdAt,
     };
@@ -62,6 +71,11 @@ class MatchModel {
       teamBName: json['teamBName'] ?? '',
       venue: json['venue'] ?? '',
       status: json['status'] ?? 'upcoming',
+      teamAScore: json['teamAScore'] ?? 0,
+      teamBScore: json['teamBScore'] ?? 0,
+      lastUpdatedAt: json['lastUpdatedAt'] != null
+          ? parseDate(json['lastUpdatedAt'])
+          : null,
       scheduledAt: parseDate(json['scheduledAt']),
       createdAt: parseDate(json['createdAt']),
     );

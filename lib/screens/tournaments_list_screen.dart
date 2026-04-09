@@ -5,6 +5,7 @@ import '../models/tournament_model.dart';
 import 'edit_tournament_screen.dart';
 import 'manage_matches_screen.dart';
 import 'manage_teams_screen.dart';
+import 'leaderboard_screen.dart';
 
 class TournamentsListScreen extends StatefulWidget {
   const TournamentsListScreen({super.key});
@@ -257,6 +258,14 @@ class _TournamentsListScreenState extends State<TournamentsListScreen> {
                                       ManageTeamsScreen(tournament: tournament),
                                 ),
                               );
+                            } else if (value == 'leaderboard') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      LeaderboardScreen(tournament: tournament),
+                                ),
+                              );
                             } else if (value == 'edit') {
                               Navigator.push(
                                 context,
@@ -279,6 +288,10 @@ class _TournamentsListScreenState extends State<TournamentsListScreen> {
                             PopupMenuItem<String>(
                               value: 'manage-teams',
                               child: Text("Manage Teams"),
+                            ),
+                            PopupMenuItem<String>(
+                              value: 'leaderboard',
+                              child: Text("View Leaderboard"),
                             ),
                             PopupMenuItem<String>(
                               value: 'edit',
