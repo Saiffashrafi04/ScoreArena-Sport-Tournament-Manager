@@ -510,6 +510,19 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                                   Text(
                                     'When: ${match.scheduledAt.toLocal().toString().split('.').first}',
                                   ),
+                                  if (widget.tournament.sport
+                                          .toLowerCase()
+                                          .trim() ==
+                                      'cricket') ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Scores: ${match.teamAName} ${match.teamAScore}${match.teamAWickets != null ? '/${match.teamAWickets}' : ''}${match.teamAOvers != null ? ' (${match.teamAOvers} overs)' : ''} | ${match.teamBName} ${match.teamBScore}${match.teamBWickets != null ? '/${match.teamBWickets}' : ''}${match.teamBOvers != null ? ' (${match.teamBOvers} overs)' : ''}',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
                                   const SizedBox(height: 4),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
@@ -529,6 +542,17 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                                       ),
                                     ),
                                   ),
+                                  if ((match.resultText ?? '').isNotEmpty) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'Result: ${match.resultText}',
+                                      style: TextStyle(
+                                        color: Colors.grey.shade700,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                               trailing: PopupMenuButton<String>(
@@ -556,10 +580,10 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                                   }
                                 },
                                 itemBuilder: (context) => const [
-                                    PopupMenuItem<String>(
-                                      value: 'live-score',
-                                      child: Text('Live Score Entry'),
-                                    ),
+                                  PopupMenuItem<String>(
+                                    value: 'live-score',
+                                    child: Text('Live Score Entry'),
+                                  ),
                                   PopupMenuItem<String>(
                                     value: 'upcoming',
                                     child: Text('Set Upcoming'),

@@ -7,10 +7,7 @@ import '../models/team_standing_model.dart';
 class LeaderboardScreen extends StatefulWidget {
   final Tournament tournament;
 
-  const LeaderboardScreen({
-    super.key,
-    required this.tournament,
-  });
+  const LeaderboardScreen({super.key, required this.tournament});
 
   @override
   State<LeaderboardScreen> createState() => _LeaderboardScreenState();
@@ -58,8 +55,22 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           };
         }
 
-        // Determine winner and update records
-        if (match.teamAScore > match.teamBScore) {
+        final resultText = (match.resultText ?? '').toLowerCase();
+
+        // Determine winner and update records.
+        if (match.winnerTeamId == match.teamAId) {
+          teamRecords[match.teamAId]!['wins']++;
+          teamRecords[match.teamBId]!['losses']++;
+        } else if (match.winnerTeamId == match.teamBId) {
+          teamRecords[match.teamBId]!['wins']++;
+          teamRecords[match.teamAId]!['losses']++;
+        } else if (resultText.contains('tied')) {
+          teamRecords[match.teamAId]!['ties']++;
+          teamRecords[match.teamBId]!['ties']++;
+        } else if (resultText.contains('no result')) {
+          // No result does not affect standings.
+          continue;
+        } else if (match.teamAScore > match.teamBScore) {
           // Team A wins
           teamRecords[match.teamAId]!['wins']++;
           teamRecords[match.teamBId]!['losses']++;
@@ -116,10 +127,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Leaderboard"),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text("Leaderboard"), elevation: 0),
       body: FutureBuilder<List<TeamStanding>>(
         future: _calculateStandings(),
         builder: (context, snapshot) {
@@ -147,7 +155,11 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.emoji_events, size: 80, color: Colors.grey.shade300),
+                  Icon(
+                    Icons.emoji_events,
+                    size: 80,
+                    color: Colors.grey.shade300,
+                  ),
                   const SizedBox(height: 20),
                   Text(
                     "No completed matches yet",
@@ -156,8 +168,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   const SizedBox(height: 8),
                   Text(
                     "Leaderboard will appear once matches are completed.",
-                    style: Theme.of(context).textTheme.bodyMedium
-                        ?.copyWith(color: Colors.grey),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
                   ),
                 ],
               ),
@@ -178,9 +191,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                   children: [
                     Text(
                       widget.tournament.name,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -228,10 +240,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                           borderRadius: BorderRadius.circular(12),
                           border: rank <= 3
                               ? Border(
-                                  left: BorderSide(
-                                    color: rankColor,
-                                    width: 4,
-                                  ),
+                                  left: BorderSide(color: rankColor, width: 4),
                                 )
                               : null,
                         ),
