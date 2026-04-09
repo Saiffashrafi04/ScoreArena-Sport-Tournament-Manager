@@ -407,6 +407,8 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
           teamBName: teamB.name,
           venue: venue,
           status: 'upcoming',
+          fixtureFormat: 'knockout',
+          knockoutRound: 1,
           scheduledAt: scheduledAt,
           createdAt: DateTime.now(),
         );
@@ -452,6 +454,206 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
             content: Text(
               'Error generating knockout fixtures: ${e.toString()}',
             ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isSaving = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _generateNextKnockoutRound() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Please login again.')));
+      return;
+    }
+
+    setState(() {
+      isSaving = true;
+    });
+
+    try {
+      final matchesRef = _firestore
+          .collection('tournaments')
+          .doc(widget.tournament.id)
+          .collection('matches');
+
+      final snapshot = await matchesRef.get();
+      final allMatches = snapshot.docs
+          .map((doc) => MatchModel.fromJson(doc.data(), doc.id))
+          .toList();
+
+      final knockoutMatches = allMatches
+          .where((m) => m.fixtureFormat == 'knockout')
+          .toList();
+
+      if (knockoutMatches.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'No knockout fixtures found. Generate knockout first.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      final currentRound = knockoutMatches
+          .map((m) => m.knockoutRound ?? 1)
+          .reduce((a, b) => a > b ? a : b);
+
+      final currentRoundMatches = knockoutMatches
+          .where((m) => (m.knockoutRound ?? 1) == currentRound)
+          .toList();
+
+      final incompleteCount = currentRoundMatches
+          .where(
+            (m) => m.status != 'completed' || (m.winnerTeamId ?? '').isEmpty,
+          )
+          .length;
+
+      if (incompleteCount > 0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Complete all Round $currentRound matches before generating next round.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      final existingNextRoundMatches = knockoutMatches
+          .where((m) => (m.knockoutRound ?? 1) == currentRound + 1)
+          .length;
+      if (existingNextRoundMatches > 0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Round ${currentRound + 1} already exists.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      final winners = currentRoundMatches.map((m) {
+        if (m.winnerTeamId == m.teamAId) {
+          return Team(
+            id: m.teamAId,
+            userId: m.userId,
+            name: m.teamAName,
+            captainName: '',
+            createdAt: DateTime.now(),
+          );
+        }
+        return Team(
+          id: m.teamBId,
+          userId: m.userId,
+          name: m.teamBName,
+          captainName: '',
+          createdAt: DateTime.now(),
+        );
+      }).toList();
+
+      if (winners.length < 2) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Tournament already has a final winner.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      final now = DateTime.now();
+      final defaultStart = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        10,
+        0,
+      ).add(const Duration(days: 1));
+      final startAt = selectedDateTime ?? defaultStart;
+      final venue = _venueController.text.trim().isEmpty
+          ? 'TBD'
+          : _venueController.text.trim();
+
+      final batch = _firestore.batch();
+      var createdCount = 0;
+      var slotIndex = 0;
+      String? byeTeamName;
+
+      for (var i = 0; i < winners.length; i += 2) {
+        if (i + 1 >= winners.length) {
+          byeTeamName = winners[i].name;
+          break;
+        }
+
+        final teamA = winners[i];
+        final teamB = winners[i + 1];
+
+        final match = MatchModel(
+          userId: user.uid,
+          teamAId: teamA.id ?? '',
+          teamAName: teamA.name,
+          teamBId: teamB.id ?? '',
+          teamBName: teamB.name,
+          venue: venue,
+          status: 'upcoming',
+          fixtureFormat: 'knockout',
+          knockoutRound: currentRound + 1,
+          scheduledAt: startAt.add(Duration(days: slotIndex)),
+          createdAt: DateTime.now(),
+        );
+
+        batch.set(matchesRef.doc(), match.toJson());
+        createdCount++;
+        slotIndex++;
+      }
+
+      if (createdCount == 0) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No matches generated for next round.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      await batch.commit();
+
+      if (mounted) {
+        final byeText = byeTeamName == null ? '' : ' Bye: $byeTeamName.';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Generated $createdCount matches for Round ${currentRound + 1}.$byeText',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error generating next round: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
@@ -666,6 +868,19 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                                             _showFixtureGeneratorOptions(teams),
                                   icon: const Icon(Icons.auto_awesome),
                                   label: const Text('Auto-Generate Fixtures'),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: isSaving
+                                      ? null
+                                      : _generateNextKnockoutRound,
+                                  icon: const Icon(Icons.arrow_forward),
+                                  label: const Text(
+                                    'Generate Next Knockout Round',
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -914,6 +1129,14 @@ class _ManageMatchesScreenState extends State<ManageMatchesScreen> {
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  if (match.fixtureFormat == 'knockout')
+                                    Text(
+                                      'Knockout Round ${match.knockoutRound ?? 1}',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
                                   Text('Venue: ${match.venue}'),
                                   Text(
                                     'When: ${match.scheduledAt.toLocal().toString().split('.').first}',

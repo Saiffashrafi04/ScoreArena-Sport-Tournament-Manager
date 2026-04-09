@@ -4,7 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/tournament_model.dart';
 import 'leaderboard_screen.dart';
 import 'manage_matches_screen.dart';
-import 'login_screen.dart';
 
 class ViewerDashboard extends StatefulWidget {
   const ViewerDashboard({super.key});
@@ -38,10 +37,6 @@ class _ViewerDashboardState extends State<ViewerDashboard> {
             onSelected: (value) {
               if (value == 'logout') {
                 _auth.signOut();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
               }
             },
             itemBuilder: (BuildContext context) => [

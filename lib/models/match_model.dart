@@ -17,6 +17,8 @@ class MatchModel {
   final String? teamBOvers;
   final String? winnerTeamId;
   final String? resultText;
+  final String? fixtureFormat;
+  final int? knockoutRound;
   final String? cricketResultType;
   final int? cricketResultMargin;
   final DateTime? lastUpdatedAt;
@@ -40,6 +42,8 @@ class MatchModel {
     this.teamBOvers,
     this.winnerTeamId,
     this.resultText,
+    this.fixtureFormat,
+    this.knockoutRound,
     this.cricketResultType,
     this.cricketResultMargin,
     this.lastUpdatedAt,
@@ -64,6 +68,8 @@ class MatchModel {
       'teamBOvers': teamBOvers,
       'winnerTeamId': winnerTeamId,
       'resultText': resultText,
+      'fixtureFormat': fixtureFormat,
+      'knockoutRound': knockoutRound,
       'cricketResultType': cricketResultType,
       'cricketResultMargin': cricketResultMargin,
       'lastUpdatedAt': lastUpdatedAt,
@@ -132,6 +138,8 @@ class MatchModel {
       teamBOvers: json['teamBOvers']?.toString(),
       winnerTeamId: json['winnerTeamId']?.toString(),
       resultText: json['resultText']?.toString(),
+      fixtureFormat: json['fixtureFormat']?.toString(),
+      knockoutRound: parseNullableInt(json['knockoutRound']),
       cricketResultType: json['cricketResultType']?.toString(),
       cricketResultMargin: parseNullableInt(json['cricketResultMargin']),
       lastUpdatedAt: json['lastUpdatedAt'] != null

@@ -323,6 +323,19 @@ class _LiveScoreScreenState extends State<LiveScoreScreen> {
           resultMargin = int.tryParse(_resultMarginController.text.trim());
         }
       }
+    } else {
+      if (selectedStatus == 'completed') {
+        if (teamARuns > teamBRuns) {
+          winnerTeamId = widget.match.teamAId;
+          resultText = '${widget.match.teamAName} won';
+        } else if (teamBRuns > teamARuns) {
+          winnerTeamId = widget.match.teamBId;
+          resultText = '${widget.match.teamBName} won';
+        } else {
+          winnerTeamId = null;
+          resultText = 'Match tied';
+        }
+      }
     }
 
     setState(() {
@@ -346,6 +359,9 @@ class _LiveScoreScreenState extends State<LiveScoreScreen> {
         payload['resultText'] = resultText;
         payload['cricketResultType'] = resultType;
         payload['cricketResultMargin'] = resultMargin;
+      } else {
+        payload['winnerTeamId'] = winnerTeamId;
+        payload['resultText'] = resultText;
       }
 
       await _firestore
