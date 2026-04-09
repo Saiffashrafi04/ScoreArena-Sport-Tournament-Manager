@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'create_tournament_screen.dart';
+import 'tournaments_list_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -124,9 +125,11 @@ class HomeScreen extends StatelessWidget {
                   side: const BorderSide(color: Colors.blue, width: 2),
                 ),
                 onPressed: () {
-                  // TODO: Navigate to tournaments list screen
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("Feature coming soon!")),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TournamentsListScreen(),
+                    ),
                   );
                 },
                 child: Column(

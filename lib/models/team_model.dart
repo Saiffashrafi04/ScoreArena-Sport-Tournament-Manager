@@ -1,40 +1,36 @@
-class Tournament {
-  final String? id; // Firestore document ID
-  final String userId; // Creator's user ID
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class Team {
+  final String? id;
+  final String userId;
   final String name;
-  final String sport;
-  final int numberOfTeams;
+  final String captainName;
   final DateTime createdAt;
 
-  Tournament({
+  Team({
     this.id,
     required this.userId,
     required this.name,
-    required this.sport,
-    required this.numberOfTeams,
+    required this.captainName,
     required this.createdAt,
   });
 
-  // Convert Tournament object to JSON (for saving to Firestore)
   Map<String, dynamic> toJson() {
     return {
       'userId': userId,
       'name': name,
-      'sport': sport,
-      'numberOfTeams': numberOfTeams,
+      'captainName': captainName,
       'createdAt': createdAt,
     };
   }
 
-  // Convert JSON from Firestore to Tournament object
-  factory Tournament.fromJson(Map<String, dynamic> json, String documentId) {
+  factory Team.fromJson(Map<String, dynamic> json, String documentId) {
     final createdAtRaw = json['createdAt'];
     DateTime parsedCreatedAt;
 
     if (createdAtRaw is DateTime) {
       parsedCreatedAt = createdAtRaw;
-    } else if (createdAtRaw != null &&
-        createdAtRaw.runtimeType.toString() == 'Timestamp') {
+    } else if (createdAtRaw is Timestamp) {
       parsedCreatedAt = createdAtRaw.toDate();
     } else if (createdAtRaw is String) {
       parsedCreatedAt = DateTime.tryParse(createdAtRaw) ?? DateTime.now();
@@ -42,12 +38,11 @@ class Tournament {
       parsedCreatedAt = DateTime.now();
     }
 
-    return Tournament(
+    return Team(
       id: documentId,
       userId: json['userId'] ?? '',
       name: json['name'] ?? '',
-      sport: json['sport'] ?? '',
-      numberOfTeams: json['numberOfTeams'] ?? 0,
+      captainName: json['captainName'] ?? '',
       createdAt: parsedCreatedAt,
     );
   }
