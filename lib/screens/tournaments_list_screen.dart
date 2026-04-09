@@ -243,9 +243,8 @@ class _TournamentsListScreenState extends State<TournamentsListScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => ManageTeamsScreen(
-                                    tournament: tournament,
-                                  ),
+                                  builder: (context) =>
+                                      ManageTeamsScreen(tournament: tournament),
                                 ),
                               );
                             } else if (value == 'edit') {

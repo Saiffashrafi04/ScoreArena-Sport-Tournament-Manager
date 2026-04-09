@@ -2,44 +2,70 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../models/player_model.dart';
 import '../models/team_model.dart';
 import '../models/tournament_model.dart';
-import 'manage_players_screen.dart';
 
-class ManageTeamsScreen extends StatefulWidget {
+class ManagePlayersScreen extends StatefulWidget {
   final Tournament tournament;
+  final Team team;
 
-  const ManageTeamsScreen({super.key, required this.tournament});
+  const ManagePlayersScreen({
+    super.key,
+    required this.tournament,
+    required this.team,
+  });
 
   @override
-  State<ManageTeamsScreen> createState() => _ManageTeamsScreenState();
+  State<ManagePlayersScreen> createState() => _ManagePlayersScreenState();
 }
 
-class _ManageTeamsScreenState extends State<ManageTeamsScreen> {
+class _ManagePlayersScreenState extends State<ManagePlayersScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _teamNameController = TextEditingController();
-  final _captainNameController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _jerseyNumberController = TextEditingController();
   final _firestore = FirebaseFirestore.instance;
   final _auth = FirebaseAuth.instance;
 
   bool isSaving = false;
+  late String selectedRole;
+
+  List<String> get roles {
+    final sport = widget.tournament.sport.toLowerCase().trim();
+
+    if (sport == 'cricket') {
+      return ['Batsman', 'Bowler', 'All-Rounder', 'Wicketkeeper', 'Captain'];
+    }
+
+    if (sport == 'football') {
+      return ['Goalkeeper', 'Defender', 'Midfielder', 'Forward', 'Captain'];
+    }
+
+    return ['Player', 'Captain'];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    selectedRole = roles.first;
+  }
 
   @override
   void dispose() {
-    _teamNameController.dispose();
-    _captainNameController.dispose();
+    _nameController.dispose();
+    _jerseyNumberController.dispose();
     super.dispose();
   }
 
   String _friendlyFirestoreError(Object error) {
     final message = error.toString();
     if (message.contains('permission-denied')) {
-      return 'Firestore rules are blocking team access. Update the teams subcollection rules.';
+      return 'Firestore rules are blocking player access. Update the nested players rules.';
     }
     return message;
   }
 
-  Future<void> _addTeam() async {
+  Future<void> _addPlayer() async {
     final user = _auth.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(
@@ -57,10 +83,11 @@ class _ManageTeamsScreenState extends State<ManageTeamsScreen> {
     });
 
     try {
-      final team = Team(
+      final player = Player(
         userId: user.uid,
-        name: _teamNameController.text.trim(),
-        captainName: _captainNameController.text.trim(),
+        name: _nameController.text.trim(),
+        role: selectedRole,
+        jerseyNumber: int.parse(_jerseyNumberController.text.trim()),
         createdAt: DateTime.now(),
       );
 
@@ -68,15 +95,20 @@ class _ManageTeamsScreenState extends State<ManageTeamsScreen> {
           .collection('tournaments')
           .doc(widget.tournament.id)
           .collection('teams')
-          .add(team.toJson());
+          .doc(widget.team.id)
+          .collection('players')
+          .add(player.toJson());
 
-      _teamNameController.clear();
-      _captainNameController.clear();
+      _nameController.clear();
+      _jerseyNumberController.clear();
+      setState(() {
+        selectedRole = roles.first;
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Team added successfully! ✅'),
+            content: Text('Player added successfully! ✅'),
             backgroundColor: Colors.green,
           ),
         );
@@ -99,13 +131,13 @@ class _ManageTeamsScreenState extends State<ManageTeamsScreen> {
     }
   }
 
-  Future<void> _deleteTeam(String teamId) async {
+  Future<void> _deletePlayer(String playerId) async {
     try {
       await showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Delete Team?'),
-          content: const Text('This team will be removed from the tournament.'),
+          title: const Text('Delete Player?'),
+          content: const Text('This player will be removed from the team.'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -117,7 +149,9 @@ class _ManageTeamsScreenState extends State<ManageTeamsScreen> {
                     .collection('tournaments')
                     .doc(widget.tournament.id)
                     .collection('teams')
-                    .doc(teamId)
+                    .doc(widget.team.id)
+                    .collection('players')
+                    .doc(playerId)
                     .delete();
 
                 Navigator.pop(context);
@@ -125,7 +159,7 @@ class _ManageTeamsScreenState extends State<ManageTeamsScreen> {
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Team deleted successfully! ✅'),
+                      content: Text('Player deleted successfully! ✅'),
                       backgroundColor: Colors.green,
                     ),
                   );
@@ -154,14 +188,16 @@ class _ManageTeamsScreenState extends State<ManageTeamsScreen> {
 
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: Text(widget.tournament.name)),
-        body: const Center(child: Text('Please login again to manage teams.')),
+        appBar: AppBar(title: Text(widget.team.name)),
+        body: const Center(
+          child: Text('Please login again to manage players.'),
+        ),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Teams - ${widget.tournament.name}'),
+        title: Text('Players - ${widget.team.name}'),
         elevation: 0,
       ),
       body: Padding(
@@ -181,44 +217,79 @@ class _ManageTeamsScreenState extends State<ManageTeamsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Add Team',
+                        'Add Player',
                         style: Theme.of(context).textTheme.titleMedium
                             ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),
                       TextFormField(
-                        controller: _teamNameController,
+                        controller: _nameController,
                         decoration: InputDecoration(
-                          labelText: 'Team Name',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          prefixIcon: const Icon(Icons.group),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Enter team name';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: _captainNameController,
-                        decoration: InputDecoration(
-                          labelText: 'Captain Name (optional)',
+                          labelText: 'Player Name',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                           prefixIcon: const Icon(Icons.person),
                         ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Enter player name';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: selectedRole,
+                        decoration: InputDecoration(
+                          labelText: 'Role',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          prefixIcon: const Icon(Icons.badge),
+                        ),
+                        items: roles
+                            .map(
+                              (role) => DropdownMenuItem<String>(
+                                value: role,
+                                child: Text(role),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            selectedRole = value ?? roles.first;
+                          });
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _jerseyNumberController,
+                        keyboardType: TextInputType.number,
+                        decoration: InputDecoration(
+                          labelText: 'Jersey Number',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          prefixIcon: const Icon(Icons.numbers),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Enter jersey number';
+                          }
+                          final parsed = int.tryParse(value.trim());
+                          if (parsed == null || parsed < 0) {
+                            return 'Enter a valid number';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 14),
                       SizedBox(
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(
-                          onPressed: isSaving ? null : _addTeam,
+                          onPressed: isSaving ? null : _addPlayer,
                           child: isSaving
                               ? const SizedBox(
                                   width: 20,
@@ -230,7 +301,7 @@ class _ManageTeamsScreenState extends State<ManageTeamsScreen> {
                                     ),
                                   ),
                                 )
-                              : const Text('Add Team'),
+                              : const Text('Add Player'),
                         ),
                       ),
                     ],
@@ -245,6 +316,8 @@ class _ManageTeamsScreenState extends State<ManageTeamsScreen> {
                     .collection('tournaments')
                     .doc(widget.tournament.id)
                     .collection('teams')
+                    .doc(widget.team.id)
+                    .collection('players')
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting &&
@@ -270,18 +343,18 @@ class _ManageTeamsScreenState extends State<ManageTeamsScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            Icons.groups,
+                            Icons.person_outline,
                             size: 80,
                             color: Colors.grey.shade300,
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'No teams yet',
+                            'No players yet',
                             style: Theme.of(context).textTheme.titleLarge,
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Add your first team using the form above.',
+                            'Add your first player using the form above.',
                             style: Theme.of(context).textTheme.bodyMedium,
                           ),
                         ],
@@ -289,20 +362,20 @@ class _ManageTeamsScreenState extends State<ManageTeamsScreen> {
                     );
                   }
 
-                  final teams = [...snapshot.data!.docs]
+                  final players = [...snapshot.data!.docs]
                     ..sort((a, b) {
                       final aData = a.data() as Map<String, dynamic>;
                       final bData = b.data() as Map<String, dynamic>;
-                      final aCreated = Team.fromJson(aData, a.id).createdAt;
-                      final bCreated = Team.fromJson(bData, b.id).createdAt;
+                      final aCreated = Player.fromJson(aData, a.id).createdAt;
+                      final bCreated = Player.fromJson(bData, b.id).createdAt;
                       return bCreated.compareTo(aCreated);
                     });
 
                   return ListView.builder(
-                    itemCount: teams.length,
+                    itemCount: players.length,
                     itemBuilder: (context, index) {
-                      final doc = teams[index];
-                      final team = Team.fromJson(
+                      final doc = players[index];
+                      final player = Player.fromJson(
                         doc.data() as Map<String, dynamic>,
                         doc.id,
                       );
@@ -311,44 +384,26 @@ class _ManageTeamsScreenState extends State<ManageTeamsScreen> {
                         margin: const EdgeInsets.only(bottom: 12),
                         child: ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: Colors.blue.shade100,
-                            child: const Icon(Icons.groups, color: Colors.blue),
+                            backgroundColor: Colors.green.shade100,
+                            child: const Icon(
+                              Icons.person,
+                              color: Colors.green,
+                            ),
                           ),
                           title: Text(
-                            team.name,
+                            player.name,
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (team.captainName.trim().isNotEmpty)
-                                Text('Captain: ${team.captainName}'),
-                              Text(
-                                'Created: ${team.createdAt.toLocal().toString().split('.')[0]}',
-                              ),
-                            ],
+                          subtitle: Text(
+                            'Role: ${player.role}   |   Jersey: ${player.jerseyNumber}',
                           ),
                           trailing: PopupMenuButton<String>(
                             onSelected: (value) {
-                              if (value == 'manage-players') {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ManagePlayersScreen(
-                                      tournament: widget.tournament,
-                                      team: team,
-                                    ),
-                                  ),
-                                );
-                              } else if (value == 'delete' && team.id != null) {
-                                _deleteTeam(team.id!);
+                              if (value == 'delete' && player.id != null) {
+                                _deletePlayer(player.id!);
                               }
                             },
                             itemBuilder: (context) => const [
-                              PopupMenuItem<String>(
-                                value: 'manage-players',
-                                child: Text('Manage Players'),
-                              ),
                               PopupMenuItem<String>(
                                 value: 'delete',
                                 child: Text(
