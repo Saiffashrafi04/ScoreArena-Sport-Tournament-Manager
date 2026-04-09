@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -8,60 +10,72 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _auth = FirebaseAuth.instance;
+
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
+
+  bool isLogin = true; // toggle login/signup
+
+  Future<void> authenticate() async {
+    try {
+      if (isLogin) {
+        await _auth.signInWithEmailAndPassword(
+          email: emailController.text.trim(),
+          password: passwordController.text.trim(),
+        );
+      } else {
+        await _auth.createUserWithEmailAndPassword(
+          email: emailController.text.trim(),
+          password: passwordController.text.trim(),
+        );
+      }
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message ?? "Error")));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Login"), centerTitle: true),
+      appBar: AppBar(title: Text(isLogin ? "Login 🔐" : "Signup 📝")),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Email
             TextField(
               controller: emailController,
-              decoration: const InputDecoration(
-                labelText: "Email",
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: "Email"),
             ),
-
-            const SizedBox(height: 20),
-
-            // Password
+            const SizedBox(height: 10),
             TextField(
               controller: passwordController,
               obscureText: true,
-              decoration: const InputDecoration(
-                labelText: "Password",
-                border: OutlineInputBorder(),
-              ),
+              decoration: const InputDecoration(labelText: "Password"),
             ),
-
-            const SizedBox(height: 30),
-
-            // Login Button
+            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                // will add logic next
-              },
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-              ),
-              child: const Text("Login"),
+              onPressed: authenticate,
+              child: Text(isLogin ? "Login" : "Signup"),
             ),
-
-            const SizedBox(height: 15),
-
-            // Signup text
             TextButton(
               onPressed: () {
-                // later
+                setState(() {
+                  isLogin = !isLogin;
+                });
               },
-              child: const Text("Don't have an account? Sign up"),
+              child: Text(
+                isLogin
+                    ? "Create new account"
+                    : "Already have an account? Login",
+              ),
             ),
           ],
         ),
