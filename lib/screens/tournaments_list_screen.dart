@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/tournament_model.dart';
 import 'edit_tournament_screen.dart';
+import 'manage_matches_screen.dart';
 import 'manage_teams_screen.dart';
 
 class TournamentsListScreen extends StatefulWidget {
@@ -239,7 +240,16 @@ class _TournamentsListScreenState extends State<TournamentsListScreen> {
                         ),
                         trailing: PopupMenuButton<String>(
                           onSelected: (value) {
-                            if (value == 'manage-teams') {
+                            if (value == 'manage-matches') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ManageMatchesScreen(
+                                    tournament: tournament,
+                                  ),
+                                ),
+                              );
+                            } else if (value == 'manage-teams') {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
@@ -262,6 +272,10 @@ class _TournamentsListScreenState extends State<TournamentsListScreen> {
                             }
                           },
                           itemBuilder: (context) => const [
+                            PopupMenuItem<String>(
+                              value: 'manage-matches',
+                              child: Text("Schedule Matches"),
+                            ),
                             PopupMenuItem<String>(
                               value: 'manage-teams',
                               child: Text("Manage Teams"),
